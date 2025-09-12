@@ -12,12 +12,29 @@ HORIZONTAL_VELOCITY = 5
 JUMP_FORCE = -11.5
 PLAYER_POS_START = (WIDTH - 120, HEIGHT / 2)
 
+# Enemy spawn positions
+ENEMY1_POS = (200, HEIGHT - 160)
+ENEMY2_POS = (500, HEIGHT - 280)
+ENEMY3_POS = (800, HEIGHT - 160)
+ENEMY4_POS = (900, HEIGHT - 280)
+
+
 def reset_game():
     player.collision_rect.center = PLAYER_POS_START
     player.vertical_velocity = 0
     player.jumping = False
     player.moving = False
     player.current_frame = 0
+    reset_pos_enemy()
+
+def reset_pos_enemy():
+    enemies[0].actor.pos = (ENEMY1_POS[0], ENEMY1_POS[1])
+    enemies[1].actor.pos = (ENEMY2_POS[0], ENEMY2_POS[1])
+    enemies[2].actor.pos = (ENEMY3_POS[0], ENEMY3_POS[1])
+    enemies[3].actor.pos = (ENEMY4_POS[0], ENEMY4_POS[1])
+
+    
+
 
 
 # Tiles
@@ -82,7 +99,6 @@ class Player:
         self.flip_x = False
         self.previous_bottom = self.collision_rect.bottom  # Para controle de colisão
 
-        # Frames
         self.current_frame = 0
         self.frame_counter = 1
 
@@ -145,8 +161,6 @@ class Player:
             frames = self.idle_left_frames if self.flip_x else self.idle_right_frames
             self.current_frame = (self.current_frame + 1) % len(frames)
             self.actor.image = frames[self.current_frame]
-
-
         self.frame_counter = 0
 
     def apply_boundary(self):
@@ -161,6 +175,60 @@ class Player:
 
 player = Player(PLAYER_POS_START[0], PLAYER_POS_START[1])
 
+# ---- ENEMY ----
+class Enemy:
+    def __init__(self, x, y):
+        self.actor = Actor("enemy/bee_left0", (x,y))
+        
+        # Frames
+        self.left_frames = ["enemy/bee_left0", "enemy/bee_left1"]
+        self.right_frames = ["enemy/bee_right0", "enemy/bee_right1"]
+
+        # Attributes
+        self.horizontal_velocity = 2
+        self.direction = -1
+        self.left_limit = 10
+        self.right_limit = WIDTH - 10
+
+        self.current_frame = 0
+        self.frame_counter = 1
+
+    def apply_animation(self):
+        self.frame_counter += 1
+        if self.frame_counter <= 10: # Avoiding nested if
+            return
+        frames = self.left_frames if self.direction == -1 else self.right_frames
+        self.current_frame = (self.current_frame + 1) % len(frames)
+        self.actor.image = frames[self.current_frame]
+        self.frame_counter = 0
+
+    def apply_movement(self):
+        self.actor.x += self.horizontal_velocity * self.direction
+        if self.actor.x <= self.left_limit or self.actor.x >= self.right_limit:
+            self.direction *= -1
+        
+    def apply_physics(self):
+        if self.actor.colliderect(player.collision_rect):
+            reset_game()
+    
+    def draw(self):
+        self.actor.draw()
+
+    def update(self):
+        self.apply_movement()
+        self.apply_physics()
+        self.apply_animation()
+
+enemies = [
+    Enemy(ENEMY1_POS[0], ENEMY1_POS[1]),
+    Enemy(ENEMY2_POS[0], ENEMY2_POS[1]),
+    Enemy(ENEMY3_POS[0], ENEMY3_POS[1]),
+    Enemy(ENEMY4_POS[0], ENEMY4_POS[1])
+]
+
+
+enemy = Enemy(WIDTH / 2, HEIGHT / 2)
+
 # ---- GOAL ----
 class Goal:
     def __init__(self, x, y):
@@ -174,15 +242,19 @@ class Goal:
             reset_game()
 
 goal = Goal(WIDTH - 50, 50)
-
 # ---- MAIN FUNCTION ----
 def draw():
     screen.clear()
     screen.blit('background', (-WIDTH / 1.2, -HEIGHT / 1.2))
     drawing_platforms()
     goal.draw()
+    for enemy in enemies:
+        enemy.draw()
     player.draw()
 
 def update():
     player.update()
     goal.check_collision(player)
+    for enemy in enemies:
+        enemy.update()
+
