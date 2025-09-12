@@ -10,15 +10,16 @@ HORIZONTAL_VELOCITY = 5
 JUMP_FORCE = -11.5
 
 # Tiles
+platform_size = (128, 32)
 platforms = [
     Rect((0, HEIGHT - 40), (WIDTH, 32)),
-    Rect((WIDTH / 2, HEIGHT - 160), (180, 32)),
-    Rect((WIDTH / 4, HEIGHT - 160), (140, 32)),
-    Rect((0, HEIGHT / 1.5), ((200,32))),
-    Rect((WIDTH / 8, HEIGHT / 2), (150,32)),
-    Rect((WIDTH / 3, HEIGHT / 2), (170,32)),
-    Rect((WIDTH / 1.9, HEIGHT / 2), (140,32)),
-    Rect((WIDTH / 1.4, HEIGHT / 3), (150,32)),
+    Rect((WIDTH / 2, HEIGHT - 160), platform_size),
+    Rect((WIDTH / 4, HEIGHT - 160), platform_size),
+    Rect((0, HEIGHT / 1.5), ((192,32))),
+    Rect((WIDTH / 8, HEIGHT / 2), platform_size),
+    Rect((WIDTH / 3, HEIGHT / 2), platform_size),
+    Rect((WIDTH / 1.9, HEIGHT / 2), platform_size),
+    Rect((WIDTH / 1.4, HEIGHT / 3), platform_size),
     ]
 
 tile_width = 64
@@ -39,8 +40,9 @@ def drawing_platforms():
 # ---- PLAYER ----
 class Player:
     def __init__(self, x, y):
+        # Sprite
         self.actor = Actor('player/idle_right0', (x, y))
-        
+
         # Frames
         self.idle_right_frames = ['player/idle_right0', 'player/idle_right1', 'player/idle_right2', 'player/idle_right3']
         self.idle_left_frames = ['player/idle_left0', 'player/idle_left1', 'player/idle_left2', 'player/idle_left3']
@@ -51,44 +53,52 @@ class Player:
         self.jump_right_frames = ['player/jump_right3','player/jump_right4']
         self.jump_left_frames = ['player/jump_left1', 'player/jump_left2']
 
-        # Atributes
+        # Hitbox (collider) - less size than the actor sprite player, for avoiding bug
+        hitbox_width = 36
+        hitbox_height = 61
+        self.collision_rect = Rect(
+            x - hitbox_width // 2,
+            y - hitbox_height // 2,
+            hitbox_width,
+            hitbox_height
+        )
+
+        # Movement attributes
         self.vertical_velocity = 0
         self.horizontal_velocity = HORIZONTAL_VELOCITY
         self.moving = False
         self.jumping = False
         self.flip_x = False
-        self.previous_bottom = self.actor.bottom # Used for avoiding bug (player teleport in the rect top)
-
-        # Collision
-        self.collision_rect.x = self.actor.x - collision_width / 2
-        self.collision_rect.y = self.actor.y - self.actor.height / 2
-        self.collision_rect.width = collision_width
-        self.collision_rect.height = self.actor.height
-
+        self.previous_bottom = self.collision_rect.bottom  # Para controle de colisão
 
         # Frames
         self.current_frame = 0
         self.frame_counter = 1
 
     def update(self):
-        self.previous_bottom = self.actor.bottom
+        self.previous_bottom = self.collision_rect.bottom
         self.apply_movement()
         self.apply_physics()
         self.apply_animation()
         self.apply_boundary()
 
     def draw(self):
+        # Sprite follows the collider
+        self.actor.x = self.collision_rect.centerx
+        self.actor.y = self.collision_rect.centery
         self.actor.draw()
+        # for debug
+        # screen.draw.rect(self.collision_rect, (0, 255, 0))
 
     def apply_movement(self):
         self.moving = False
 
         if keyboard.a:
-            self.actor.x -= self.horizontal_velocity
+            self.collision_rect.x -= self.horizontal_velocity
             self.moving = True
             self.flip_x = True
         if keyboard.d:
-            self.actor.x += self.horizontal_velocity
+            self.collision_rect.x += self.horizontal_velocity
             self.moving = True
             self.flip_x = False
         if keyboard.space and not self.jumping:
@@ -97,13 +107,14 @@ class Player:
 
     def apply_physics(self):
         self.vertical_velocity += GRAVITY_FORCE
-        self.actor.y += self.vertical_velocity
+        self.collision_rect.y += self.vertical_velocity
 
         for platform in platforms:
-            if not self.actor.colliderect(platform):
+            if not self.collision_rect.colliderect(platform):
                 continue
-            if self.vertical_velocity > 0 and self.previous_bottom <= platform.top  and self.actor.bottom > platform.top:
-                self.actor.bottom = platform.top
+            # Collision from above (player falling onto the platform)
+            if self.vertical_velocity > 0 and self.previous_bottom <= platform.top and self.collision_rect.bottom > platform.top:
+                self.collision_rect.bottom = platform.top
                 self.vertical_velocity = 0
                 self.jumping = False
 
@@ -128,8 +139,14 @@ class Player:
         self.frame_counter = 0
 
     def apply_boundary(self):
-        self.actor.x = 0 if self.actor.x < 0 else self.actor.x
-        self.actor.x = WIDTH if self.actor.x > WIDTH else self.actor.x
+        if self.collision_rect.left < 0:
+            self.collision_rect.left = 0
+        if self.collision_rect.right > WIDTH:
+            self.collision_rect.right = WIDTH
+        if self.collision_rect.top < 0:
+            self.collision_rect.top = 0
+        if self.collision_rect.bottom > HEIGHT:
+            self.collision_rect.bottom = HEIGHT
 
 player = Player(WIDTH / 2, HEIGHT / 2)
 
@@ -138,6 +155,7 @@ player = Player(WIDTH / 2, HEIGHT / 2)
 # ---- MAIN FUNCTION ----
 def draw():
     screen.clear()
+    screen.blit('background', (-WIDTH / 1.2, -HEIGHT / 1.2))
     drawing_platforms()
     player.draw()
 
