@@ -7,14 +7,34 @@ WIDTH = 1200
 HEIGHT = 600
 GRAVITY_FORCE = 0.5
 HORIZONTAL_VELOCITY = 5
-JUMP_FORCE = -14
+JUMP_FORCE = -11.5
 
-# Ground
+# Tiles
 platforms = [
-    Rect((0, HEIGHT - 40), (WIDTH, 40)),
-    Rect((WIDTH / 2, HEIGHT - 160), (200, 40)),
-    Rect((0, HEIGHT / 2), ((200,40)))
+    Rect((0, HEIGHT - 40), (WIDTH, 32)),
+    Rect((WIDTH / 2, HEIGHT - 160), (180, 32)),
+    Rect((WIDTH / 4, HEIGHT - 160), (140, 32)),
+    Rect((0, HEIGHT / 1.5), ((200,32))),
+    Rect((WIDTH / 8, HEIGHT / 2), (150,32)),
+    Rect((WIDTH / 3, HEIGHT / 2), (170,32)),
+    Rect((WIDTH / 1.9, HEIGHT / 2), (140,32)),
+    Rect((WIDTH / 1.4, HEIGHT / 3), (150,32)),
     ]
+
+tile_width = 64
+tile_height = 64
+def apply_tiles_in_platforms():
+    for platform in platforms:
+        num_tiles = math.ceil(platform.width / tile_width)
+        for i in range(num_tiles):
+            x_tile = platform.x + i * tile_width
+            y_tile = platform.y
+            screen.blit("tiles/center", (x_tile, y_tile))
+def drawing_platforms():
+    for platform in platforms:
+        screen.draw.rect(platform, (255,0,0))
+    apply_tiles_in_platforms()
+
 
 # ---- PLAYER ----
 class Player:
@@ -39,6 +59,14 @@ class Player:
         self.flip_x = False
         self.previous_bottom = self.actor.bottom # Used for avoiding bug (player teleport in the rect top)
 
+        # Collision
+        self.collision_rect.x = self.actor.x - collision_width / 2
+        self.collision_rect.y = self.actor.y - self.actor.height / 2
+        self.collision_rect.width = collision_width
+        self.collision_rect.height = self.actor.height
+
+
+        # Frames
         self.current_frame = 0
         self.frame_counter = 1
 
@@ -105,14 +133,13 @@ class Player:
 
 player = Player(WIDTH / 2, HEIGHT / 2)
 
-def drawing_platforms():
-    for platform in platforms:
-        screen.draw.rect(platform, (255,0,0))
+
 
 # ---- MAIN FUNCTION ----
 def draw():
     screen.clear()
-    player.draw()
     drawing_platforms()
+    player.draw()
+
 def update():
     player.update()
