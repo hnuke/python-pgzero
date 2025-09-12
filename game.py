@@ -3,11 +3,22 @@ import math
 from pgzero.actor import Actor
 from pygame import Rect 
 
+
+# Game Variables and methods
 WIDTH = 1200
 HEIGHT = 600
 GRAVITY_FORCE = 0.5
 HORIZONTAL_VELOCITY = 5
 JUMP_FORCE = -11.5
+PLAYER_POS_START = (WIDTH - 120, HEIGHT / 2)
+
+def reset_game():
+    player.collision_rect.center = PLAYER_POS_START
+    player.vertical_velocity = 0
+    player.jumping = False
+    player.moving = False
+    player.current_frame = 0
+
 
 # Tiles
 platform_size = (128, 32)
@@ -148,16 +159,30 @@ class Player:
         if self.collision_rect.bottom > HEIGHT:
             self.collision_rect.bottom = HEIGHT
 
-player = Player(WIDTH / 2, HEIGHT / 2)
+player = Player(PLAYER_POS_START[0], PLAYER_POS_START[1])
 
+# ---- GOAL ----
+class Goal:
+    def __init__(self, x, y):
+        self.actor = Actor('goal', (x,y))
 
+    def draw(self):
+        self.actor.draw()
+
+    def check_collision(self, player):
+        if self.actor.colliderect(player.collision_rect):
+            reset_game()
+
+goal = Goal(WIDTH - 50, 50)
 
 # ---- MAIN FUNCTION ----
 def draw():
     screen.clear()
     screen.blit('background', (-WIDTH / 1.2, -HEIGHT / 1.2))
     drawing_platforms()
+    goal.draw()
     player.draw()
 
 def update():
     player.update()
+    goal.check_collision(player)
