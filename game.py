@@ -19,7 +19,7 @@ platforms = [
 # ---- PLAYER ----
 class Player:
     def __init__(self, x, y):
-        self.actor = Actor('player/idle0', (x, y))
+        self.actor = Actor('player/idle_right0', (x, y))
         
         # Frames
         self.idle_right_frames = ['player/idle_right0', 'player/idle_right1', 'player/idle_right2', 'player/idle_right3']
@@ -31,17 +31,19 @@ class Player:
         self.jump_right_frames = ['player/jump_right3','player/jump_right4']
         self.jump_left_frames = ['player/jump_left1', 'player/jump_left2']
 
-        # Atributos
+        # Atributes
         self.vertical_velocity = 0
         self.horizontal_velocity = HORIZONTAL_VELOCITY
         self.moving = False
         self.jumping = False
         self.flip_x = False
+        self.previous_bottom = self.actor.bottom # Used for avoiding bug (player teleport in the rect top)
 
         self.current_frame = 0
         self.frame_counter = 1
 
     def update(self):
+        self.previous_bottom = self.actor.bottom
         self.apply_movement()
         self.apply_physics()
         self.apply_animation()
@@ -72,7 +74,7 @@ class Player:
         for platform in platforms:
             if not self.actor.colliderect(platform):
                 continue
-            if self.vertical_velocity > 0 and self.actor.bottom > platform.top:
+            if self.vertical_velocity > 0 and self.previous_bottom <= platform.top  and self.actor.bottom > platform.top:
                 self.actor.bottom = platform.top
                 self.vertical_velocity = 0
                 self.jumping = False
@@ -90,8 +92,9 @@ class Player:
             self.current_frame = (self.current_frame + 1) % len(frames)
             self.actor.image = frames[self.current_frame]
         elif not self.moving and not self.jumping:
-            self.current_frame = (self.current_frame + 1) % len(self.idle_right_frames)
-            self.actor.image = self.idle_frames[self.current_frame]
+            frames = self.idle_left_frames if self.flip_x else self.idle_right_frames
+            self.current_frame = (self.current_frame + 1) % len(frames)
+            self.actor.image = frames[self.current_frame]
 
 
         self.frame_counter = 0
