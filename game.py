@@ -19,20 +19,18 @@ ENEMY_START_POS = [
     (WIDTH / 1.5, HEIGHT / 3),
     (WIDTH / 2, HEIGHT / 2),
     (15, 150)
-
 ]
 
 sound_on = True
 
 def draw_game():
-    drawing_platforms()
+    draw_platforms()
     goal.draw()
     for enemy in enemies:
         enemy.draw()
     player.draw()
 
 def reset_game():
-    music.set_volume(0.5)
     music.play('time_for_adventure')
     player.collision_rect.center = PLAYER_POS_START
     player.vertical_velocity = 0
@@ -49,6 +47,24 @@ def reset_pos_enemy():
 def reset_direction_enemy():
     for enemy in enemies:
         enemy.direction = -1
+
+def toggle_sound():
+    global sound_on
+    sound_on = not sound_on
+    if sound_on:
+        music.set_volume(0.5)
+        sounds.jump.set_volume(0.3)
+        sounds.explosion.set_volume(0.2)
+        sounds.coin.set_volume(0.5)
+
+    else:
+        music.set_volume(0)
+        sounds.jump.set_volume(0)
+        sounds.explosion.set_volume(0)
+        sounds.coin.set_volume(0)
+
+def exit_game():
+    exit()
 
 # Tiles
 platform_size = (128, 32)
@@ -72,7 +88,7 @@ def apply_tiles_in_platforms():
             x_tile = platform.x + i * tile_width
             y_tile = platform.y
             screen.blit("tiles/center", (x_tile, y_tile))
-def drawing_platforms():
+def draw_platforms():
     for platform in platforms:
         screen.draw.rect(platform, (255,0,0))
     apply_tiles_in_platforms()
@@ -114,7 +130,6 @@ class Player:
         self.current_frame = 0
         self.frame_counter = 1
 
-        sounds.jump.set_volume(0.3)
 
     def update(self):
         self.previous_bottom = self.collision_rect.bottom
@@ -208,9 +223,6 @@ class Enemy:
         self.current_frame = 0
         self.frame_counter = 1
 
-        sounds.explosion.set_volume(0.2)
-
-
     def apply_animation(self):
         self.frame_counter += 1
         if self.frame_counter <= 10: # Avoiding nested if
@@ -246,7 +258,6 @@ for (x, y) in ENEMY_START_POS:
 class Goal:
     def __init__(self, x, y):
         self.actor = Actor('goal', (x,y))
-        sounds.coin.set_volume(0.5)
 
     def draw(self):
         self.actor.draw()
@@ -264,7 +275,10 @@ class Menu:
         self.game_state = "menu"
     def draw(self):
         if self.game_state == "menu":
+            screen.blit('kodlandtitle', (200, 100))
             screen.draw.text("PRESS W TO START", center=(WIDTH / 2, HEIGHT / 2), fontsize=40)
+            for btn in menu_buttons:
+                btn.draw()
         elif self.game_state == "playing":
             draw_game()
         elif self.game_state == "game_over":
@@ -288,7 +302,33 @@ class Menu:
 
 menu = Menu()
 
+# ---- BUTTON ----
+class Button:
+    def __init__(self, x, y, width, height, label, action):
+        self.rect = Rect((x, y), (width, height))
+        self.label = label
+        self.action = action
+
+    def draw(self):
+        screen.draw.filled_rect(self.rect, "grey")
+        screen.draw.text(self.label, center=self.rect.center, fontsize=24, color="white")
+
+    def check_click(self, pos):
+        if self.rect.collidepoint(pos):
+            self.action() 
+
+menu_buttons = [
+    Button(WIDTH / 2 - 100, HEIGHT / 1.5, 200, 50, "SOM ON/OFF", toggle_sound),
+    Button(WIDTH / 2 - 100, HEIGHT / 1.2, 200, 50, "SAIR", exit_game)
+]
+
 # ---- MAIN FUNCTION ----
+
+def on_mouse_down(pos):
+    if menu.game_state == "menu":
+        for btn in menu_buttons:
+            btn.check_click(pos)
+
 def draw():
     screen.clear()
     screen.blit('background', (-WIDTH / 1.2, -HEIGHT / 1.2))
