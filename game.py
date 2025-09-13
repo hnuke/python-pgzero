@@ -3,7 +3,6 @@ import math
 from pgzero.actor import Actor
 from pygame import Rect 
 
-
 # Game Variables and methods
 WIDTH = 1200
 HEIGHT = 600
@@ -13,11 +12,15 @@ JUMP_FORCE = -11.5
 PLAYER_POS_START = (WIDTH - 120, HEIGHT / 2)
 
 # Enemy spawn positions
-ENEMY1_POS = (200, HEIGHT - 160)
-ENEMY2_POS = (500, HEIGHT - 280)
-ENEMY3_POS = (800, HEIGHT - 160)
-ENEMY4_POS = (900, HEIGHT - 280)
+ENEMY_START_POS = [
+    (100, HEIGHT - 80),
+    (300, HEIGHT - 300),
+    (500, HEIGHT - 220),
+    (WIDTH / 1.5, HEIGHT / 3),
+    (WIDTH / 2, HEIGHT / 2),
+    (15, 150)
 
+]
 
 def reset_game():
     player.collision_rect.center = PLAYER_POS_START
@@ -25,17 +28,16 @@ def reset_game():
     player.jumping = False
     player.moving = False
     player.current_frame = 0
+    reset_direction_enemy()
     reset_pos_enemy()
 
 def reset_pos_enemy():
-    enemies[0].actor.pos = (ENEMY1_POS[0], ENEMY1_POS[1])
-    enemies[1].actor.pos = (ENEMY2_POS[0], ENEMY2_POS[1])
-    enemies[2].actor.pos = (ENEMY3_POS[0], ENEMY3_POS[1])
-    enemies[3].actor.pos = (ENEMY4_POS[0], ENEMY4_POS[1])
+    for i in range(len(enemies)):
+        enemies[i].actor.pos = ENEMY_START_POS[i]
 
-    
-
-
+def reset_direction_enemy():
+    for enemy in enemies:
+        enemy.direction = -1
 
 # Tiles
 platform_size = (128, 32)
@@ -63,7 +65,6 @@ def drawing_platforms():
     for platform in platforms:
         screen.draw.rect(platform, (255,0,0))
     apply_tiles_in_platforms()
-
 
 # ---- PLAYER ----
 class Player:
@@ -219,15 +220,9 @@ class Enemy:
         self.apply_physics()
         self.apply_animation()
 
-enemies = [
-    Enemy(ENEMY1_POS[0], ENEMY1_POS[1]),
-    Enemy(ENEMY2_POS[0], ENEMY2_POS[1]),
-    Enemy(ENEMY3_POS[0], ENEMY3_POS[1]),
-    Enemy(ENEMY4_POS[0], ENEMY4_POS[1])
-]
-
-
-enemy = Enemy(WIDTH / 2, HEIGHT / 2)
+enemies = []
+for (x, y) in ENEMY_START_POS:
+    enemies.append(Enemy(x, y))
 
 # ---- GOAL ----
 class Goal:
@@ -242,6 +237,7 @@ class Goal:
             reset_game()
 
 goal = Goal(WIDTH - 50, 50)
+
 # ---- MAIN FUNCTION ----
 def draw():
     screen.clear()
@@ -257,4 +253,3 @@ def update():
     goal.check_collision(player)
     for enemy in enemies:
         enemy.update()
-
