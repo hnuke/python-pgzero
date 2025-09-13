@@ -9,7 +9,7 @@ HEIGHT = 600
 GRAVITY_FORCE = 0.5
 HORIZONTAL_VELOCITY = 5
 JUMP_FORCE = -11.5
-PLAYER_POS_START = (WIDTH - 120, HEIGHT / 2)
+PLAYER_POS_START = (WIDTH - 120, HEIGHT - 80)
 
 # Enemy spawn positions
 ENEMY_START_POS = [
@@ -22,7 +22,18 @@ ENEMY_START_POS = [
 
 ]
 
+sound_on = True
+
+def draw_game():
+    drawing_platforms()
+    goal.draw()
+    for enemy in enemies:
+        enemy.draw()
+    player.draw()
+
 def reset_game():
+    music.set_volume(0.5)
+    music.play('time_for_adventure')
     player.collision_rect.center = PLAYER_POS_START
     player.vertical_velocity = 0
     player.jumping = False
@@ -103,6 +114,8 @@ class Player:
         self.current_frame = 0
         self.frame_counter = 1
 
+        sounds.jump.set_volume(0.3)
+
     def update(self):
         self.previous_bottom = self.collision_rect.bottom
         self.apply_movement()
@@ -130,6 +143,7 @@ class Player:
             self.moving = True
             self.flip_x = False
         if keyboard.space and not self.jumping:
+            sounds.jump.play()
             self.jumping = True
             self.vertical_velocity = JUMP_FORCE
 
@@ -194,6 +208,9 @@ class Enemy:
         self.current_frame = 0
         self.frame_counter = 1
 
+        sounds.explosion.set_volume(0.2)
+
+
     def apply_animation(self):
         self.frame_counter += 1
         if self.frame_counter <= 10: # Avoiding nested if
@@ -210,7 +227,8 @@ class Enemy:
         
     def apply_physics(self):
         if self.actor.colliderect(player.collision_rect):
-            reset_game()
+            sounds.explosion.play()
+            menu.game_state = "game_over"
     
     def draw(self):
         self.actor.draw()
@@ -228,28 +246,58 @@ for (x, y) in ENEMY_START_POS:
 class Goal:
     def __init__(self, x, y):
         self.actor = Actor('goal', (x,y))
+        sounds.coin.set_volume(0.5)
 
     def draw(self):
         self.actor.draw()
 
     def check_collision(self, player):
         if self.actor.colliderect(player.collision_rect):
-            reset_game()
+            sounds.coin.play()
+            menu.game_state = "win"
 
 goal = Goal(WIDTH - 50, 50)
+
+# ---- MENU ----
+class Menu:
+    def __init__(self):
+        self.game_state = "menu"
+    def draw(self):
+        if self.game_state == "menu":
+            screen.draw.text("PRESS W TO START", center=(WIDTH / 2, HEIGHT / 2), fontsize=40)
+        elif self.game_state == "playing":
+            draw_game()
+        elif self.game_state == "game_over":
+            screen.draw.text("YOU LOST!", center=(WIDTH / 2, HEIGHT / 2), fontsize=40)
+            screen.draw.text("PRESS S TO THE MENU", center=(WIDTH / 2, HEIGHT / 1.5), fontsize=40)
+        elif self.game_state == "win":
+            screen.draw.text("YOU WIN!", center=(WIDTH / 2, HEIGHT / 2), fontsize=40)
+            screen.draw.text("PRESS S TO THE MENU", center=(WIDTH / 2, HEIGHT / 1.5), fontsize=40)
+
+    def update(self):
+        if self.game_state == "menu":
+            if keyboard.w:
+                reset_game()
+                self.game_state = "playing"
+        elif self.game_state == "game_over":
+            if keyboard.s:
+                self.game_state = "menu"
+        elif self.game_state == "win":
+            if keyboard.s:
+                self.game_state = "menu"
+
+menu = Menu()
 
 # ---- MAIN FUNCTION ----
 def draw():
     screen.clear()
     screen.blit('background', (-WIDTH / 1.2, -HEIGHT / 1.2))
-    drawing_platforms()
-    goal.draw()
-    for enemy in enemies:
-        enemy.draw()
-    player.draw()
+    menu.draw()
 
 def update():
-    player.update()
-    goal.check_collision(player)
-    for enemy in enemies:
-        enemy.update()
+    menu.update()
+    if menu.game_state == "playing":
+        player.update()
+        goal.check_collision(player)
+        for enemy in enemies:
+            enemy.update()
